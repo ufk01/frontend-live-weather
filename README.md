@@ -23,8 +23,13 @@
    npm run lint
    ```
 
+
 ## Project Structure
 
-- The project is a single-page application, with the main code written directly in `App.vue`.
+- The project is developed using JavaScript (Vue.js).
+- It is a single-page application, with the main code written directly in `App.vue`.
 - Additionally, a separate component has been added for popups.
+- The frontend continuously displays real-time results to the user.
+- The data table shows the latest 5 entries.
+- Default data (Turkey/Ankara) is retrieved from the backend configuration (.yml) file. Other input fields are processed based on user input.
 
