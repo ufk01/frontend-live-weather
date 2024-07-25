@@ -67,12 +67,12 @@
         </div>
 
         <Popup position="top-left">
-            <p style="text-align: center"><strong>Hint1:</strong></p>
+            <p style="text-align: center"><strong>Hint1</strong></p>
                <p>When input fields are changed, the current interval is cleared and the latest data is processed;
                    then, data is updated according to the new configuration.</p>
         </Popup>
         <Popup position="top-right">
-            <p style="text-align: center"><strong>Hint2:</strong></p>
+            <p style="text-align: center"><strong>Hint2</strong></p>
             <p><strong>Reset Input:</strong> This resets the input fields to default values (Turkey/Ankara/5 Seconds).</p>
             <p><strong>Clear Table:</strong> This clears the data in the table.</p>
             <p>Default data (e.g., Turkey/Ankara) is fetched from the backend configuration (.yml file). Other data (e.g., Germany/Munich) is provided by the user.</p>
