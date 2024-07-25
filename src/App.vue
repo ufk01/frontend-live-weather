@@ -7,7 +7,7 @@
             <form @submit.prevent="fetchWeatherData" class="weather-form">
                 <div class="form-group">
                     <label for="country">{{languageEn.weather.country}}:</label>
-                    <select id="country" v-model="selectedCountry" @change="fetchCities">
+                    <select id="country" v-model="selectedCountry" @change="handleCountryChange">
                         <option v-for="country in countries" :key="country.name" :value="country.value">
                             {{ country.name }}
                         </option>
@@ -15,14 +15,26 @@
                 </div>
                 <div class="form-group">
                     <label for="city">{{languageEn.weather.city}}:</label>
-                    <select id="city" v-model="selectedCity">
+                    <select id="city" v-model="selectedCity" @change="handleCityChange">
                         <option v-for="city in cities" :key="city.name" :value="city.value">
                             {{ city.name }}
                         </option>
                     </select>
                 </div>
-                <button type="submit">{{languageEn.button}}</button>
+                <div class="form-group">
+                    <label for="time-interval">{{languageEn.timeInterval}}:</label>
+                    <select id="time-interval" v-model="selectedTimeInterval" @change="handleTimeIntervalChange">
+                        <option v-for="interval in timeIntervals" :key="interval.label" :value="interval.value">
+                            {{ interval.label }}
+                        </option>
+                    </select>
+                </div>
+                <div class="button-container">
+                    <button @click="resetToDefault" class="action-button">{{languageEn.resetButton}}</button>
+                    <button @click="clearTable" class="action-button">{{languageEn.clearButton}}</button>
+                </div>
             </form>
+
         </div>
 
         <div class="weather-table-container" v-if="!validation(weatherResponseDto.city) && !validation(weatherResponseDto.country) && !loadingTable">
@@ -32,7 +44,7 @@
                     <th>{{languageEn.currentTime}}</th>
                     <th>{{languageEn.weather.time}}</th>
                     <th>{{languageEn.weather.country}}</th>
-                    <th>{{languageEn.weather.city}}:</th>
+                    <th>{{languageEn.weather.city}}</th>
                     <th>{{languageEn.weather.temperature}}</th>
                     <th>{{languageEn.weather.humidity}} </th>
                     <th>{{languageEn.weather.wind}}</th>
@@ -41,23 +53,36 @@
                 </thead>
                 <tbody>
                 <tr v-for="(data, index) in previousInfo" :key="index">
-                    <td>{{ data.localDateTime}}</td>
-                    <td>{{convertTime(data.dt)}}</td>
+                    <td>{{ data.localDateTime }}</td>
+                    <td>{{ convertTime(data.dt) }}</td>
                     <td>{{data.country}}</td>
                     <td>{{ data.city }}</td>
-                    <td>{{ data.temp }}</td>
+                    <td>{{ convertKelvinToCelsius(data.temp) }}</td>
                     <td>{{ data.humidity }}</td>
                     <td>{{ data.windSpeed }}</td>
-                    <td>{{data.description }}</td>
+                    <td>{{ data.description }}</td>
                 </tr>
                 </tbody>
             </table>
         </div>
+
+        <Popup position="top-left">
+            <p style="text-align: center"><strong>Hint1:</strong></p>
+               <p>When input fields are changed, the current interval is cleared and the latest data is processed;
+                   then, data is updated according to the new configuration.</p>
+        </Popup>
+        <Popup position="top-right">
+            <p style="text-align: center"><strong>Hint2:</strong></p>
+            <p><strong>Reset Input:</strong> This resets the input fields to default values (Turkey/Ankara/5 Seconds).</p>
+            <p><strong>Clear Table:</strong> This clears the data in the table.</p>
+            <p>Default data (e.g., Turkey/Ankara) is fetched from the backend configuration (.yml file). Other data (e.g., Germany/Munich) is provided by the user.</p>
+        </Popup>
     </div>
 </template>
 <script>
 import axios from "axios";
 import { DateTime } from 'luxon';
+import Popup from './components/Popup.vue';
 
 export default {
     name: 'WeatherApp',
@@ -69,6 +94,13 @@ export default {
                 {name: "Germany", value: "Germany"}
             ],
             cities: [],
+            selectedTimeInterval: 5000,
+            timeIntervals: [
+                {label: "5 Seconds", value: 5000},
+                {label: "10 Seconds", value: 10000},
+                {label: "30 Seconds", value: 30000},
+                {label: "1 Minute", value: 60000}
+            ],
             selectedCountry: null,
             selectedCity: null,
             weatherResponseDto: {
@@ -86,6 +118,9 @@ export default {
                 header: 'Live Weather',
                 button: 'Get Weather',
                 currentTime: "Current Time",
+                timeInterval: "Time Interval",
+                resetButton: "Reset Inputs",
+                clearButton: "Clear Table",
                 weather: {
                     temperature: 'Temperature (°C)',
                     wind: 'Wind (km/h)',
@@ -95,20 +130,33 @@ export default {
                     country: 'Country',
                     time: 'Latest Live Data Update',
                     feelsLike: 'Feels Like',
-                    description: "Situation",
+                    description: "Description",
                 }
             },
             loadingTable: false,
             previousInfo: [],
-
+            interval: null,
+            props: {
+                position: {
+                    type: String,
+                    default: 'top-right'
+                }
+            },
 
         };
+    },
+    components: {
+        Popup
     },
     methods: {
         convertTime(unixTimestamp){
             const date = new Date(unixTimestamp * 1000);
             return date.toLocaleString();
         },
+        convertKelvinToCelsius(kelvin){
+            return (kelvin - 273.15).toFixed(2);
+        },
+
         validation(obj){
             return obj === '' || obj === null || obj === undefined;
         },
@@ -143,6 +191,29 @@ export default {
                 this.selectedCity = null;
             }
         },
+        startInterval(duration, exp) {
+            if(!exp === true) {
+                this.fetchWeatherData();
+            }
+            this.interval = setInterval(() => this.fetchWeatherData(), duration);
+        },
+        stopInterval() {
+            clearInterval(this.interval);
+        },
+        handleCountryChange() {
+            this.fetchCities();
+            this.resetInterval();
+        },
+        handleCityChange() {
+            this.resetInterval();
+        },
+        handleTimeIntervalChange() {
+            this.resetInterval();
+        },
+        resetInterval(exp) {
+            this.stopInterval();
+            this.startInterval(this.selectedTimeInterval, exp);
+        },
          fetchWeatherData() {
             this.loadingTable = true;
              axios
@@ -155,8 +226,8 @@ export default {
                 .then(response => {
                     this.weatherResponseDto = response.data;
                     this.previousInfo.unshift(this.weatherResponseDto)
-                    if (this.previousInfo.length > 6) {
-                        this.previousInfo.splice(6);
+                    if (this.previousInfo.length > 5) {
+                        this.previousInfo.splice(5);
                     }
                     const originalDate = DateTime.local().toFormat('yyyy-MM-dd HH:mm:ss');
                     const [date, time] = originalDate.split(' ');
@@ -167,13 +238,22 @@ export default {
                     console.error("Weather data fetch error:", error);
                 });
             this.loadingTable = false;
-
-
         },
+        resetToDefault() {
+            this.selectedCountry = null;
+            this.selectedCity = null;
+            this.fetchCities();
+            this.selectedTimeInterval = 5000;
+            this.resetInterval(true);
+        },
+        clearTable() {
+            this.previousInfo = [];
+            this.resetInterval(true);
+        }
     },
     mounted(){
         this.fetchCities();
-        this.fetchWeatherData();
+        this.startInterval(5000);
     },
 }
 
@@ -201,7 +281,7 @@ export default {
     height: 100%;
     background: url('@/assets/background.jpg') no-repeat center center;
     background-size: cover;
-    opacity: 0.8;
+    opacity: 1;
     z-index: -1;
 }
 
@@ -216,6 +296,7 @@ export default {
     border-bottom-right-radius: 30px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
     margin-bottom: 40px;
+    opacity: 0.88;
 }
 
 h1 {
@@ -233,8 +314,12 @@ h1 {
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
     margin-bottom: 30px;
     border: 1px solid #ddd;
+    background: rgba(255, 255, 255, 0.8);
 }
-
+.weather-table-container {
+    background: rgba(255, 255, 255, 0.8);
+    opacity: 0.89;
+}
 .weather-form {
     display: flex;
     flex-direction: column;
@@ -293,8 +378,8 @@ button:hover {
     border-radius: 15px;
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
     margin-top: 1px;
-    max-height: 500px; /* Bu değeri ihtiyacınıza göre ayarlayın */
-    overflow-y: auto; /* Dikey kaydırma çubuğunu gösterir */
+    max-height: 500px;
+    overflow-y: auto;
 }
 
 
@@ -333,4 +418,29 @@ button:hover {
 .weather-table tbody tr:nth-child(odd) {
     background-color: #fff;
 }
+
+.button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    opacity: 0.88;
+
+}
+
+.action-button {
+    padding: 10px 20px;
+    font-size: 1em;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.action-button:hover {
+    background-color: #0056b3;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
 </style>
