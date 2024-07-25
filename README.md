@@ -1,24 +1,30 @@
-# frontend-live-weather
 
-## Project setup
-```
-npm install
-```
+# How To Run Frontend
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
+## Project Setup
 
-### Compiles and minifies for production
-```
-npm run build
-```
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-### Lints and fixes files
-```
-npm run lint
-```
+2. **Compile and Hot-Reload for Development**
+   ```bash
+   npm run serve
+   ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+3. **Compile and Minify for Production**
+   ```bash
+   npm run build
+   ```
+
+4. **Lint and Fix Files**
+   ```bash
+   npm run lint
+   ```
+
+## Project Structure
+
+- The project is a single-page application, with the main code written directly in `App.vue`.
+- Additionally, a separate component has been added for popups.
+
